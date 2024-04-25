@@ -4,6 +4,7 @@ import type { EmbeddingsInterface } from "@langchain/core/embeddings";
 import { VectorStore } from "@langchain/core/vectorstores";
 import { Document } from "@langchain/core/documents";
 /**
+ * This is a forked langchain library
  * Type representing the k-nearest neighbors (k-NN) engine used in
  * Elasticsearch.
  */
