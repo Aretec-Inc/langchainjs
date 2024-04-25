@@ -159,26 +159,49 @@ export class ElasticVectorSearch extends VectorStore {
     k: number,
     filter?: ElasticFilter
   ): Promise<[Document, number][]> {
+    let combine_filter = { "bool": { "must": [] } }
+    let es_query = {
+      "query": {
+          "script_score": {
+              "query": combine_filter,
+              "script": {
+                  "source": `doc['embedding'].size() < 0.1 ? 0 : dotProduct(params.query_vector,'embedding') +10`,
+                  "params": {
+                      "query_vector": query
+                  }
+              },
+              "min_score": 10.5,
+
+          }
+      },
+      "size": k,
+      "from": 0
+  }
+
     const result = await this.client.search({
       index: this.indexName,
-      size: k,
-      knn: {
-        field: "embedding",
-        query_vector: query,
-        filter: { bool: this.buildMetadataTerms(filter) },
-        k,
-        num_candidates: this.candidates,
-      },
+      body: es_query,
     });
+    // const result = await this.client.search({
+    //   index: this.indexName,
+    //   size: k,
+    //   knn: {
+    //     field: "embedding",
+    //     query_vector: query,
+    //     filter: { bool: this.buildMetadataTerms(filter) },
+    //     k,
+    //     num_candidates: this.candidates,
+    //   },
+    // });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return result.hits.hits.map((hit: any) => [
       new Document({
-        pageContent: hit._source.text,
-        metadata: hit._source.metadata,
+        pageContent: hit._source?.content,
+        metadata: hit._source?.metadata,
       }),
       hit._score,
-    ]);
+    ])
   }
 
   /**
